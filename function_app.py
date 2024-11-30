@@ -88,6 +88,11 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     req_body = req.get_json()
     logging.info("req_body: %s", req_body)
     first_item = req_body[0]
+
+
+    first_item.pop('EventProcessedUtcTime', None)
+    first_item.pop('PartitionId', None)
+    first_item.pop('EventEnqueuedUtcTime', None)
     email_address = first_item.pop('email_address', None)
     logging.info("email_address: %s", email_address)
     logging.info("first_item: %s", first_item)
