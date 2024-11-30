@@ -29,6 +29,9 @@ import pickle
 with open('pickle-files/global_model.pkl', 'rb') as file:
     global_model = joblib.load(file)
 
+with open('pickle-files/resident_model.pkl', 'rb') as file:
+    resident_model = joblib.load(file)
+
     # Load the encoders and scaler from pickle files
 with open('pickle-files/onehot_encoder.pkl', 'rb') as file:
     onehot_encoder = joblib.load(file)
@@ -76,36 +79,36 @@ allowSelfSignedHttps(True) # this line is needed if you use self-signed certific
 
 
 
-def call_score_endpoint(url: str,data:dict)->list:
-    # call score endpoint
-    body = str.encode(json.dumps(data))    
-    # Replace this with the primary/secondary key, AMLToken, or Microsoft Entra ID token for the endpoint
-    api_key = AML_API_KEY_GLOBAL_MODEL # CHANGE HERE!
-    if not api_key:
-        raise Exception("A key should be provided to invoke the endpoint")
+# def call_score_endpoint(url: str,data:dict)->list:
+#     # call score endpoint
+#     body = str.encode(json.dumps(data))    
+#     # Replace this with the primary/secondary key, AMLToken, or Microsoft Entra ID token for the endpoint
+#     api_key = AML_API_KEY_GLOBAL_MODEL # CHANGE HERE!
+#     if not api_key:
+#         raise Exception("A key should be provided to invoke the endpoint")
 
 
-    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key)}
+#     headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key)}
 
-    req = urllib.request.Request(url, body, headers)
+#     req = urllib.request.Request(url, body, headers)
 
-    try:
-        response = urllib.request.urlopen(req)
+#     try:
+#         response = urllib.request.urlopen(req)
 
-        result = response.read()
-        decoded_result = result.decode('utf-8')  # Assuming the bytes are encoded in UTF-8
-        actual_result = ast.literal_eval(decoded_result)[0]
-        return actual_result #int 
+#         result = response.read()
+#         decoded_result = result.decode('utf-8')  # Assuming the bytes are encoded in UTF-8
+#         actual_result = ast.literal_eval(decoded_result)[0]
+#         return actual_result #int 
 
-    except urllib.error.HTTPError as error:
-        logging.error("The request failed with status code: " + str(error.code))
+#     except urllib.error.HTTPError as error:
+#         logging.error("The request failed with status code: " + str(error.code))
 
-        # Print the headers - they include the requert ID and the timestamp, which are useful for debugging the failure
-        logging.error(error.info())
-        logging.error(error.read().decode("utf8", 'ignore'))
+#         # Print the headers - they include the requert ID and the timestamp, which are useful for debugging the failure
+#         logging.error(error.info())
+#         logging.error(error.read().decode("utf8", 'ignore'))
 
 
-def score(data):
+def score(data,is_global_model=True):
     """
     This function is called for every invocation of the endpoint to perform the actual scoring/prediction.
     In the example we extract the data from the json input and call the scikit-learn model's predict()
@@ -193,8 +196,10 @@ def score(data):
 
         # ensure remaining columns are of the correct type
         # make predictions
+      
         predictions_proba = global_model.predict_proba(df_global)[:, 1]
         predictions = global_model.predict(df_global)
+    
 
         logging.info("Predictions successful")
 
@@ -236,10 +241,12 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     global_url = 'https://ml-paynet-ltyiq.eastus2.inference.ml.azure.com/score'
     # get raw data
     # call score endpoint global model
-    result_global = score(first_item)[0] #
+    result_global = score(first_item,is_global_model=True)[0] #
+    logging.info("result_global"+str(result_global))
 
     # call score endpoint personal model
-    result_personal = score(first_item)[0] # dont forget to change here
+    result_personal = score(first_item,is_global_model=False)[0] # dont forget to change here
+    logging.info("result_personal"+str(result_personal))
     # create decision
 
     result_all = make_decision(result_global, result_personal)
