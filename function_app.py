@@ -24,6 +24,7 @@ from category_encoders import TargetEncoder
 
 import pickle
 
+
 # Replace 'your_file.pkl' with the path to your pickle file
 with open('pickle-files/global_model.pkl', 'rb') as file:
     global_model = joblib.load(file)
@@ -111,9 +112,10 @@ def score(data):
     method and return the result back
     """
     try:
+
         logging.info("model 1: request received")
         # Convert JSON string to dictionary
-        data = json.loads(raw_data)
+        # data = json.loads(data)
 
         # Convert dictionary to pandas DataFrame
         df = pd.DataFrame([data])
@@ -191,8 +193,8 @@ def score(data):
 
         # ensure remaining columns are of the correct type
         # make predictions
-        predictions_proba = model.predict_proba(df_global)[:, 1]
-        predictions = model.predict(df_global)
+        predictions_proba = global_model.predict_proba(df_global)[:, 1]
+        predictions = global_model.predict(df_global)
 
         logging.info("Predictions successful")
 
@@ -203,15 +205,8 @@ def score(data):
         }
         return result["predictions_proba"]
     except Exception as e:
-        logging.error("Error in prediction: ", str(e))
+        logging.error("Error in prediction: "+ str(e))
         return json.dumps({"error": str(e)})
-
-
-
-
-
-
-
 
 
 def calculate_average(value1: float, value2: float) -> float:
@@ -241,10 +236,10 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     global_url = 'https://ml-paynet-ltyiq.eastus2.inference.ml.azure.com/score'
     # get raw data
     # call score endpoint global model
-    result_global = score(first_item) #int
+    result_global = score(first_item)[0] #
 
     # call score endpoint personal model
-    result_personal = score(first_item) # dont forget to change here
+    result_personal = score(first_item)[0] # dont forget to change here
     # create decision
 
     result_all = make_decision(result_global, result_personal)

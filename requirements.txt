@@ -4,9 +4,9 @@
 
 azure-functions
 azure-eventhub
-scikit-learn
+scikit-learn==1.2.2
 category_encoders
-numpy
+numpy==1.26.4
 joblib
 haversine
 xgboost
