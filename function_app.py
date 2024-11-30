@@ -5,6 +5,32 @@ import json
 import os
 import ssl
 import ast
+import asyncio
+from dotenv import load_dotenv
+
+from azure.eventhub import EventData
+from azure.eventhub.aio import EventHubProducerClient
+
+load_dotenv()
+
+EVENT_HUB_CONNECTION_STR = os.environ['EVENT_HUB_CONNECTION_STR']
+EVENT_HUB_NAME = os.environ['EVENT_HUB_NAME']
+
+async def run(result):
+    producer = EventHubProducerClient.from_connection_string(
+            conn_str=EVENT_HUB_CONNECTION_STR, eventhub_name=EVENT_HUB_NAME
+        )
+    
+    async with producer:
+                json_message = json.dumps(result)
+                event_data = EventData(json_message)
+
+                try:
+                    await producer.send_batch([event_data])
+                
+                except Exception as e:
+                    print("Send failed: {e}")
+
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
@@ -75,6 +101,7 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     # create decision
 
     result_all = make_decision(result_global, result_personal)
+    asyncio.run(run(result_all))
 
     # return decision to stream analytics?
   
