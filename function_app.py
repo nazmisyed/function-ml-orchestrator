@@ -6,12 +6,10 @@ import os
 import ssl
 import ast
 import asyncio
-from dotenv import load_dotenv
 
 from azure.eventhub import EventData
 from azure.eventhub.aio import EventHubProducerClient
 
-load_dotenv()
 
 EVENT_HUB_CONNECTION_STR = os.environ['EVENT_HUB_CONNECTION_STR']
 EVENT_HUB_NAME = os.environ['EVENT_HUB_NAME']
@@ -22,6 +20,7 @@ async def run(result):
         )
     
     async with producer:
+                logging.info(result)
                 json_message = json.dumps(result)
                 event_data = EventData(json_message)
 
@@ -89,7 +88,9 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     req_body = req.get_json()
     logging.info("req_body: %s", req_body)
     first_item = req_body[0]
-
+    email_address = first_item.pop('email_address', None)
+    logging.info("email_address: %s", email_address)
+    logging.info("first_item: %s", first_item)
 
     global_url = 'https://ml-paynet-ltyiq.eastus2.inference.ml.azure.com/score'
     # get raw data
@@ -101,11 +102,16 @@ def predict(req: func.HttpRequest) -> func.HttpResponse:
     # create decision
 
     result_all = make_decision(result_global, result_personal)
-    asyncio.run(run(result_all))
+    result_dict = {
+        "is_fraud": result_all,
+        "email_address": email_address 
+
+    }
+    asyncio.run(run(result_dict))
 
     # return decision to stream analytics?
   
     return func.HttpResponse(
-            json.dumps(result_all),
+            json.dumps(result_dict),
             status_code=200
     )
