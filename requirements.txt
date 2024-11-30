@@ -4,3 +4,10 @@
 
 azure-functions
 azure-eventhub
+scikit-learn
+category_encoders
+numpy
+joblib
+haversine
+xgboost
+pandas
